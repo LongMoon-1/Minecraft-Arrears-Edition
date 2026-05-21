@@ -1,6 +1,6 @@
 # Minecraft Arrears Edition
 
-脑子一抽做的，用 Java + LWJGL 从头写的一个 Minecraft 风格原型。
+用 Java + LWJGL 从头写的一个 Minecraft 原型。
 
 说是游戏，其实更像一个技术验证。目前就是在一个平坦的世界里，用草方块和石头方块搭搭拆拆，支持第一人称移动、跳跃、重力、碰撞，左键拆右键放，按 ESC 可以保存退出。
 
