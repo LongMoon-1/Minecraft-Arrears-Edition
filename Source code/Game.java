@@ -9,12 +9,10 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.nio.ByteBuffer;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL12.*;
 
@@ -66,6 +64,7 @@ public class Game {
     static class World {
         static final int SIZE = 128;
         static final int PLATFORM_Y = 32;
+        static final int STONE_DEPTH = 30;
         byte[][][] blocks;
         Block grassBlock = new Block(0.25f, 0.75f, 0.25f);
         Block stoneBlock = new Block(0.5f, 0.5f, 0.5f);
@@ -76,9 +75,14 @@ public class Game {
 
         void generate() {
             int half = 50, cx = SIZE / 2, cz = SIZE / 2;
-            for (int x = cx - half; x < cx + half; x++)
-                for (int z = cz - half; z < cz + half; z++)
+            for (int x = cx - half; x < cx + half; x++) {
+                for (int z = cz - half; z < cz + half; z++) {
                     blocks[x][PLATFORM_Y][z] = 1;
+                    for (int y = PLATFORM_Y - 1; y >= PLATFORM_Y - STONE_DEPTH; y--) {
+                        blocks[x][y][z] = 2;
+                    }
+                }
+            }
         }
 
         byte getBlock(int x, int y, int z) {
@@ -184,7 +188,7 @@ public class Game {
             glDisable(GL_COLOR_MATERIAL);
 
             drawCrosshair();
-            drawText(10, 10, "beta 1.1");
+            drawText(10, 10, "beta 1.2");
         }
 
         boolean shouldRenderFace(int bx, int by, int bz) {
@@ -343,7 +347,7 @@ public class Game {
         int drawCharBig(int x, int y, char c) {
             glLineWidth(3);
             glBegin(GL_LINES);
-            int s = 2; // scale
+            int s = 2;
             switch (c) {
                 case 'b':
                     glVertex2f(x, y+9*s); glVertex2f(x, y);
@@ -386,6 +390,14 @@ public class Game {
                     glVertex2f(x, y+9*s); glVertex2f(x+1*s, y+9*s);
                     glEnd();
                     return 3*s;
+                case '2':
+                    glVertex2f(x, y); glVertex2f(x+3*s, y);
+                    glVertex2f(x+3*s, y); glVertex2f(x+3*s, y+4*s);
+                    glVertex2f(x+3*s, y+4*s); glVertex2f(x, y+4*s);
+                    glVertex2f(x, y+4*s); glVertex2f(x, y+9*s);
+                    glVertex2f(x, y+9*s); glVertex2f(x+3*s, y+9*s);
+                    glEnd();
+                    return 5*s;
                 case '0':
                     glVertex2f(x, y); glVertex2f(x+3*s, y);
                     glVertex2f(x+3*s, y); glVertex2f(x+3*s, y+9*s);
@@ -495,14 +507,23 @@ public class Game {
 
         while (Mouse.next()) {
             if (Mouse.getEventButtonState()) {
-                if (Mouse.getEventButton() == 0) { RaycastResult h = raycast(p, w, 5); if (h.hit) w.setBlock(h.blockX, h.blockY, h.blockZ, (byte) 0); }
+                if (Mouse.getEventButton() == 0) {
+                    RaycastResult h = raycast(p, w, 5);
+                    if (h.hit) w.setBlock(h.blockX, h.blockY, h.blockZ, (byte) 0);
+                }
                 if (Mouse.getEventButton() == 1) {
                     RaycastResult h = raycast(p, w, 5);
                     if (h.hit) {
                         int px = Math.round(p.pos.x), py = Math.round(p.pos.y), pz = Math.round(p.pos.z);
                         if (!(h.placeX == px && h.placeY == py && h.placeZ == pz) &&
-                                !(h.placeX == px && h.placeY == py + 1 && h.placeZ == pz))
-                            w.setBlock(h.placeX, h.placeY, h.placeZ, (byte) 2);
+                                !(h.placeX == px && h.placeY == py + 1 && h.placeZ == pz)) {
+                            // beta 1.2: 如果在草方块层放置，替换为草方块
+                            if (h.placeY == World.PLATFORM_Y) {
+                                w.setBlock(h.placeX, h.placeY, h.placeZ, (byte) 1);
+                            } else {
+                                w.setBlock(h.placeX, h.placeY, h.placeZ, (byte) 2);
+                            }
+                        }
                     }
                 }
             }
